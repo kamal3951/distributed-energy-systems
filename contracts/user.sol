@@ -49,16 +49,17 @@ contract user {
         u0_address[msg.sender] = l - 1;
     }
 
-    function updateProductionRate(uint256 productionRate) public {
-        uint256 ind = u0_address[msg.sender];
+    function updateProductionRate(uint ind, uint256 productionRate) public {
+        // uint256 ind = u0_address[msg.sender];
         user storage _user = Users[ind];
         _user.productionRate = productionRate;
     }
 
     function updateDemandRate(
+        uint ind,
         uint256 demandRate
     ) public returns (bool success) {
-        uint256 ind = u0_address[msg.sender];
+        // uint256 ind = u0_address[msg.sender];
         user storage _user = Users[ind];
         uint excessDemand = demandRate - _user.demandRate;
         if (excessDemand > 0) {
@@ -67,7 +68,9 @@ contract user {
                 uint l = paths[i].length;
                 uint source = paths[i][l - 1];
                 user memory _source = Users[source];
-                if (_source.productionRate >= excessDemand) {
+                if (
+                    _source.productionRate - _source.demandRate >= excessDemand
+                ) {
                     bool confirm = true;
                     for (uint j = 0; j < l - 1; j++) {
                         if (
@@ -82,20 +85,26 @@ contract user {
                     }
                     if (confirm) {
                         for (uint k = 1; k < l - 1; k++) {
-                            u0_u1_currentTradeRate[paths[i][j]][
-                                paths[i][j + 1]
+                            u0_u1_currentTradeRate[paths[i][k]][
+                                paths[i][k + 1]
                             ] =
-                                u0_u1_currentTradeRate[paths[i][j]][
-                                    paths[i][j + 1]
+                                u0_u1_currentTradeRate[paths[i][k]][
+                                    paths[i][k + 1]
                                 ] +
                                 excessDemand;
                         }
-                        _source.productionRate =
-                            _source.productionRate +
-                            excessDemand;
+                        // _source.productionRate =
+                        //     _source.productionRate +
+                        //     excessDemand;
+                        updateProductionRate(
+                            source,
+                            _source.productionRate + excessDemand
+                        );
+                        return true;
                     }
                 }
             }
         }
+        return false;
     }
 }
